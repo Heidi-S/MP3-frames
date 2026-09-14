@@ -13,16 +13,13 @@ import {
   BITS_PER_KILOBIT,
   CHANNEL_MODE_MASK,
   CHANNEL_MODE_SHIFT,
-  ChannelMode,
   EMPHASIS_MASK,
   FRAME_HEADER_BYTES,
   FREE_FORMAT_BITRATE_INDEX,
   LAYER_MASK,
   LAYER_SHIFT,
-  MPEG1_LAYER3_BITRATES_KBPS,
   MPEG1_LAYER3_FRAME_LENGTH_COEFFICIENT,
   MPEG1_LAYER3_SLOT_BYTES,
-  MPEG1_SAMPLE_RATES_HZ,
   MpegLayerId,
   MpegVersionId,
   PADDING_MASK,
@@ -40,6 +37,10 @@ import {
   SYNC_BYTE_1_VALUE,
   VERSION_MASK,
   VERSION_SHIFT,
+  channelModeFromBits,
+  mpeg1Layer3BitrateKbps,
+  mpeg1SampleRateHz,
+  type ChannelMode,
 } from './constants.js';
 import { Mp3ParseError } from './errors.js';
 
@@ -127,10 +128,9 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
     );
   }
   if (versionId !== SUPPORTED_VERSION_ID) {
-    const name = versionId === MpegVersionId.Mpeg2 ? 'MPEG Version 2' : 'MPEG Version 2.5';
     throw new Mp3ParseError(
       'UNSUPPORTED_MPEG_VERSION',
-      `${name} frame at byte offset ${offset}: only MPEG Version 1 is supported.`,
+      `${unsupportedMpegVersionLabel(versionId)} frame at byte offset ${offset}: only MPEG Version 1 is supported.`,
       { offset },
     );
   }
@@ -145,10 +145,9 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
     );
   }
   if (layerId !== SUPPORTED_LAYER_ID) {
-    const name = layerId === MpegLayerId.Layer1 ? 'Layer I' : 'Layer II';
     throw new Mp3ParseError(
       'UNSUPPORTED_LAYER',
-      `MPEG ${name} frame at byte offset ${offset}: only Layer III is supported.`,
+      `MPEG ${unsupportedLayerLabel(layerId)} frame at byte offset ${offset}: only Layer III is supported.`,
       { offset },
     );
   }
@@ -171,8 +170,8 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
       { offset },
     );
   }
-  const bitrateKbps = MPEG1_LAYER3_BITRATES_KBPS[bitrateIndex];
-  if (bitrateKbps === undefined || bitrateKbps === null) {
+  const bitrateKbps = mpeg1Layer3BitrateKbps(bitrateIndex);
+  if (bitrateKbps === undefined) {
     throw new Mp3ParseError(
       'RESERVED_BITRATE',
       `Invalid bitrate index ${bitrateIndex} at byte offset ${offset}.`,
@@ -189,8 +188,8 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
       { offset },
     );
   }
-  const sampleRateHz = MPEG1_SAMPLE_RATES_HZ[sampleRateIndex];
-  if (sampleRateHz === undefined || sampleRateHz === null) {
+  const sampleRateHz = mpeg1SampleRateHz(sampleRateIndex);
+  if (sampleRateHz === undefined) {
     throw new Mp3ParseError(
       'RESERVED_SAMPLE_RATE',
       `Invalid sampling rate index ${sampleRateIndex} at byte offset ${offset}.`,
@@ -211,7 +210,10 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
     );
   }
 
-  const channelMode = ((byte3 & CHANNEL_MODE_MASK) >> CHANNEL_MODE_SHIFT) as ChannelMode;
+  const channelMode = channelModeFromBits((byte3 & CHANNEL_MODE_MASK) >> CHANNEL_MODE_SHIFT);
+  if (channelMode === undefined) {
+    throw new Error(`Unreachable: channel mode bits out of range at byte offset ${offset}.`);
+  }
 
   // 8. Frame length.
   const frameLengthBytes = calculateFrameLengthBytes(bitrateKbps, sampleRateHz, hasPadding);
@@ -236,4 +238,24 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
     channelMode,
     frameLengthBytes,
   };
+}
+
+function unsupportedMpegVersionLabel(versionId: number): string {
+  if (versionId === MpegVersionId.Mpeg2) {
+    return 'MPEG Version 2';
+  }
+  if (versionId === MpegVersionId.Mpeg2_5) {
+    return 'MPEG Version 2.5';
+  }
+  return `MPEG version id ${versionId}`;
+}
+
+function unsupportedLayerLabel(layerId: number): string {
+  if (layerId === MpegLayerId.Layer1) {
+    return 'Layer I';
+  }
+  if (layerId === MpegLayerId.Layer2) {
+    return 'Layer II';
+  }
+  return `layer id ${layerId}`;
 }

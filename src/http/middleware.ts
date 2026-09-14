@@ -2,7 +2,7 @@
  * Shared Express middleware: 404 handling and the central error handler.
  */
 
-import type { ErrorRequestHandler, RequestHandler } from 'express';
+import type { ErrorRequestHandler, RequestHandler, Response } from 'express';
 
 import { isMp3ParseError } from '../parser/index.js';
 import {
@@ -14,7 +14,7 @@ import {
 } from './errors.js';
 
 export const notFoundHandler: RequestHandler = (_req, res) => {
-  send(res.status(HTTP_STATUS.notFound), 'NOT_FOUND', 'The requested resource does not exist.');
+  sendError(res, HTTP_STATUS.notFound, 'NOT_FOUND', 'The requested resource does not exist.');
 };
 
 /**
@@ -24,34 +24,34 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
  * unexpected becomes a generic 500 with no internal detail leaked.
  */
 export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  const failure: unknown = error;
+
   if (res.headersSent) {
-    next(error);
+    next(failure);
     return;
   }
 
-  if (error instanceof HttpError) {
-    send(res.status(error.status), error.code, error.message);
+  if (failure instanceof HttpError) {
+    sendError(res, failure.status, failure.code, failure.message);
     return;
   }
 
-  if (isMp3ParseError(error)) {
-    send(res.status(statusForParseErrorCode(error.code)), error.code, error.message);
+  if (isMp3ParseError(failure)) {
+    sendError(res, statusForParseErrorCode(failure.code), failure.code, failure.message);
     return;
   }
 
   // Unknown failure: log server-side, return nothing revealing.
-  console.error('Unhandled error while processing request:', error);
-  send(
-    res.status(HTTP_STATUS.internalServerError),
+  console.error('Unhandled error while processing request:', failure);
+  sendError(
+    res,
+    HTTP_STATUS.internalServerError,
     'INTERNAL_ERROR',
     'An unexpected error occurred.',
   );
 };
 
-function send(
-  res: { json: (body: ErrorResponseBody) => unknown },
-  code: HttpErrorCode,
-  message: string,
-): void {
-  res.json({ error: { code, message } });
+function sendError(res: Response, status: number, code: HttpErrorCode, message: string): void {
+  const body: ErrorResponseBody = { error: { code, message } };
+  res.status(status).json(body);
 }

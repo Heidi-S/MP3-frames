@@ -66,6 +66,8 @@ export const MpegVersionId = {
   Mpeg1: 0b11,
 } as const;
 
+export type MpegVersionId = (typeof MpegVersionId)[keyof typeof MpegVersionId];
+
 /** Raw 2-bit values of the layer description field. */
 export const MpegLayerId = {
   Reserved: 0b00,
@@ -73,6 +75,8 @@ export const MpegLayerId = {
   Layer2: 0b10,
   Layer1: 0b11,
 } as const;
+
+export type MpegLayerId = (typeof MpegLayerId)[keyof typeof MpegLayerId];
 
 /** The only version this application supports. */
 export const SUPPORTED_VERSION_ID = MpegVersionId.Mpeg1;
@@ -89,7 +93,7 @@ export const SUPPORTED_LAYER_ID = MpegLayerId.Layer3;
  * frame length cannot be derived from the header alone) and index 15 is
  * reserved. Both are represented as `null` and rejected by the parser.
  */
-export const MPEG1_LAYER3_BITRATES_KBPS: readonly (number | null)[] = [
+export const MPEG1_LAYER3_BITRATES_KBPS = [
   null, // 0  — free format (unsupported)
   32,
   40,
@@ -106,7 +110,7 @@ export const MPEG1_LAYER3_BITRATES_KBPS: readonly (number | null)[] = [
   256,
   320,
   null, // 15 — reserved (invalid)
-] as const;
+] as const satisfies ReadonlyArray<number | null>;
 
 /** Bitrate index that means "free format". */
 export const FREE_FORMAT_BITRATE_INDEX = 0;
@@ -118,7 +122,9 @@ export const RESERVED_BITRATE_INDEX = 15;
  * MPEG-1 sampling rates in Hz, indexed by the 2-bit sampling rate index.
  * Index 3 is reserved and represented as `null`.
  */
-export const MPEG1_SAMPLE_RATES_HZ: readonly (number | null)[] = [44_100, 48_000, 32_000, null] as const;
+export const MPEG1_SAMPLE_RATES_HZ = [44_100, 48_000, 32_000, null] as const satisfies ReadonlyArray<
+  number | null
+>;
 
 /** Sampling rate index reserved by the specification. */
 export const RESERVED_SAMPLE_RATE_INDEX = 3;
@@ -159,3 +165,29 @@ export const ChannelMode = {
 } as const;
 
 export type ChannelMode = (typeof ChannelMode)[keyof typeof ChannelMode];
+
+const CHANNEL_MODE_BY_BITS = [
+  ChannelMode.Stereo,
+  ChannelMode.JointStereo,
+  ChannelMode.DualChannel,
+  ChannelMode.Mono,
+] as const satisfies readonly ChannelMode[];
+
+/**
+ * Resolve a table entry that uses `null` for reserved/unsupported indices.
+ */
+function definedTableValue(value: number | null | undefined): number | undefined {
+  return value === null || value === undefined ? undefined : value;
+}
+
+export function mpeg1Layer3BitrateKbps(index: number): number | undefined {
+  return definedTableValue(MPEG1_LAYER3_BITRATES_KBPS[index]);
+}
+
+export function mpeg1SampleRateHz(index: number): number | undefined {
+  return definedTableValue(MPEG1_SAMPLE_RATES_HZ[index]);
+}
+
+export function channelModeFromBits(bits: number): ChannelMode | undefined {
+  return CHANNEL_MODE_BY_BITS[bits];
+}

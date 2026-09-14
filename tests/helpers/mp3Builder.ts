@@ -7,6 +7,8 @@
  * application at runtime.
  */
 
+import { ChannelMode, MpegLayerId, MpegVersionId } from '../../src/parser/constants.js';
+
 export const BITRATE_INDEX_BY_KBPS: ReadonlyMap<number, number> = new Map([
   [32, 1],
   [40, 2],
@@ -31,41 +33,41 @@ export const SAMPLE_RATE_INDEX_BY_HZ: ReadonlyMap<number, number> = new Map([
 ]);
 
 export interface FrameSpec {
-  /** Raw 2-bit MPEG version id. Defaults to 0b11 (MPEG-1). */
-  versionId?: number;
-  /** Raw 2-bit layer id. Defaults to 0b01 (Layer III). */
-  layerId?: number;
+  /** Raw 2-bit MPEG version id. Defaults to MPEG-1. */
+  readonly versionId?: number;
+  /** Raw 2-bit layer id. Defaults to Layer III. */
+  readonly layerId?: number;
   /** Bitrate in kbit/s; ignored when `bitrateIndex` is given. */
-  bitrateKbps?: number;
+  readonly bitrateKbps?: number;
   /** Raw 4-bit bitrate index, for invalid-value tests. */
-  bitrateIndex?: number;
+  readonly bitrateIndex?: number;
   /** Sample rate in Hz; ignored when `sampleRateIndex` is given. */
-  sampleRateHz?: number;
+  readonly sampleRateHz?: number;
   /** Raw 2-bit sample rate index, for invalid-value tests. */
-  sampleRateIndex?: number;
-  padding?: boolean;
+  readonly sampleRateIndex?: number;
+  readonly padding?: boolean;
   /** When true the protection bit is cleared, meaning "CRC present". */
-  crc?: boolean;
-  /** Raw 2-bit channel mode. Defaults to 0b01 (joint stereo). */
-  channelMode?: number;
-  modeExtension?: number;
-  copyright?: boolean;
-  original?: boolean;
+  readonly crc?: boolean;
+  /** Raw 2-bit channel mode. Defaults to joint stereo. */
+  readonly channelMode?: number;
+  readonly modeExtension?: number;
+  readonly copyright?: boolean;
+  readonly original?: boolean;
   /** Raw 2-bit emphasis. Defaults to 0b00 (none). */
-  emphasis?: number;
-  privateBit?: boolean;
+  readonly emphasis?: number;
+  readonly privateBit?: boolean;
   /** Byte used to fill the frame payload. Defaults to 0x00. */
-  fillByte?: number;
+  readonly fillByte?: number;
 }
 
 const DEFAULTS = {
-  versionId: 0b11,
-  layerId: 0b01,
+  versionId: MpegVersionId.Mpeg1,
+  layerId: MpegLayerId.Layer3,
   bitrateKbps: 128,
   sampleRateHz: 44_100,
   padding: false,
   crc: false,
-  channelMode: 0b01,
+  channelMode: ChannelMode.JointStereo,
   modeExtension: 0b00,
   copyright: false,
   original: true,

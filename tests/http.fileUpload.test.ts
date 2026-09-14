@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import { MAX_UPLOAD_BYTES } from '../src/http/config.js';
+import type { HttpErrorCode } from '../src/http/errors.js';
+import type { FrameCountResponseBody } from '../src/http/routes/fileUpload.js';
 import {
   buildFrame,
   buildFrames,
@@ -41,8 +43,12 @@ describe('POST /file-upload — success', () => {
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toMatch(/application\/json/);
     expect(response.body).toEqual({ frameCount: 42 });
-    expect(Object.keys(response.body as object)).toEqual(['frameCount']);
-    expect(typeof (response.body as { frameCount: unknown }).frameCount).toBe('number');
+
+    const body: unknown = response.body;
+    expect(isFrameCountBody(body)).toBe(true);
+    if (isFrameCountBody(body)) {
+      expect(Object.keys(body)).toEqual(['frameCount']);
+    }
   });
 
   it('returns the exact frame count for a single frame', async () => {
@@ -111,7 +117,7 @@ describe('POST /file-upload — end-to-end with sample files', () => {
 });
 
 describe('POST /file-upload — client errors', () => {
-  const expectJsonError = (response: request.Response, status: number, code: string): void => {
+  const expectJsonError = (response: request.Response, status: number, code: HttpErrorCode): void => {
     expect(response.status).toBe(status);
     expect(response.headers['content-type']).toMatch(/application\/json/);
     expect(response.body).toEqual({ error: { code, message: expect.any(String) } });
@@ -226,3 +232,10 @@ describe('routing', () => {
     expect(response.headers['x-powered-by']).toBeUndefined();
   });
 });
+
+function isFrameCountBody(body: unknown): body is FrameCountResponseBody {
+  if (typeof body !== 'object' || body === null || !('frameCount' in body)) {
+    return false;
+  }
+  return Object.keys(body).length === 1 && typeof body.frameCount === 'number';
+}

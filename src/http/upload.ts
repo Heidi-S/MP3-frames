@@ -28,6 +28,10 @@ const singleFile = upload.single(UPLOAD_FIELD_NAME);
 
 /** Translate multer's own errors into our HTTP error shape. */
 function toHttpError(error: unknown): HttpError {
+  if (error instanceof HttpError) {
+    return error;
+  }
+
   if (error instanceof multer.MulterError) {
     switch (error.code) {
       case 'LIMIT_FILE_SIZE':

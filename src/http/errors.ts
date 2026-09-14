@@ -38,6 +38,7 @@ export class HttpError extends Error {
     this.name = 'HttpError';
     this.status = status;
     this.code = code;
+    Error.captureStackTrace?.(this, HttpError);
   }
 }
 
@@ -53,30 +54,31 @@ const UNPROCESSABLE_ENTITY = 422;
  * cannot interpret as MPEG-1 Layer III audio are reported as 422 Unprocessable
  * Content; problems with the request itself (nothing uploaded, empty upload)
  * are 400.
+ *
+ * The map is keyed by every `Mp3ParseErrorCode` so a newly added parser code is
+ * a compile-time error until it has an HTTP status.
  */
+const PARSE_ERROR_HTTP_STATUS = {
+  EMPTY_FILE: BAD_REQUEST,
+  FILE_TOO_SMALL: UNPROCESSABLE_ENTITY,
+  MALFORMED_ID3V2: UNPROCESSABLE_ENTITY,
+  NO_AUDIO_DATA: UNPROCESSABLE_ENTITY,
+  INVALID_SYNC: UNPROCESSABLE_ENTITY,
+  RESERVED_MPEG_VERSION: UNPROCESSABLE_ENTITY,
+  UNSUPPORTED_MPEG_VERSION: UNPROCESSABLE_ENTITY,
+  RESERVED_LAYER: UNPROCESSABLE_ENTITY,
+  UNSUPPORTED_LAYER: UNPROCESSABLE_ENTITY,
+  FREE_FORMAT_BITRATE: UNPROCESSABLE_ENTITY,
+  RESERVED_BITRATE: UNPROCESSABLE_ENTITY,
+  RESERVED_SAMPLE_RATE: UNPROCESSABLE_ENTITY,
+  RESERVED_EMPHASIS: UNPROCESSABLE_ENTITY,
+  TRUNCATED_FRAME: UNPROCESSABLE_ENTITY,
+  INCONSISTENT_STREAM: UNPROCESSABLE_ENTITY,
+  NO_AUDIO_FRAMES: UNPROCESSABLE_ENTITY,
+} as const satisfies Record<Mp3ParseErrorCode, number>;
+
 export function statusForParseErrorCode(code: Mp3ParseErrorCode): number {
-  switch (code) {
-    case 'EMPTY_FILE':
-      return BAD_REQUEST;
-    case 'FILE_TOO_SMALL':
-    case 'MALFORMED_ID3V2':
-    case 'NO_AUDIO_DATA':
-    case 'INVALID_SYNC':
-    case 'RESERVED_MPEG_VERSION':
-    case 'UNSUPPORTED_MPEG_VERSION':
-    case 'RESERVED_LAYER':
-    case 'UNSUPPORTED_LAYER':
-    case 'FREE_FORMAT_BITRATE':
-    case 'RESERVED_BITRATE':
-    case 'RESERVED_SAMPLE_RATE':
-    case 'RESERVED_EMPHASIS':
-    case 'TRUNCATED_FRAME':
-    case 'INCONSISTENT_STREAM':
-    case 'NO_AUDIO_FRAMES':
-      return UNPROCESSABLE_ENTITY;
-    default:
-      return BAD_REQUEST;
-  }
+  return PARSE_ERROR_HTTP_STATUS[code];
 }
 
 export const HTTP_STATUS = {

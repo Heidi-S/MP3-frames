@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Mp3ParseError,
   countMpeg1Layer3Frames,
+  isMp3ParseError,
   type Mp3ParseErrorCode,
 } from '../src/parser/index.js';
 import {
@@ -23,9 +24,11 @@ function expectParseErrorCode(data: Buffer, code: Mp3ParseErrorCode): Mp3ParseEr
   }
 
   expect(thrown, `expected ${code} but parsing succeeded`).toBeInstanceOf(Mp3ParseError);
-  const parseError = thrown as Mp3ParseError;
-  expect(parseError.code).toBe(code);
-  return parseError;
+  if (!isMp3ParseError(thrown)) {
+    throw new Error(`expected ${code} but parsing succeeded`);
+  }
+  expect(thrown.code).toBe(code);
+  return thrown;
 }
 
 describe('input-level rejection', () => {
