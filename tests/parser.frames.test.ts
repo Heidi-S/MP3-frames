@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
 import {
   calculateFrameLengthBytes,
   countMpeg1Layer3Frames,
   readFrameHeader,
   ChannelMode,
-} from '../src/parser/index.js';
+} from "../src/parser/index.js";
 import {
   BITRATE_INDEX_BY_KBPS,
   SAMPLE_RATE_INDEX_BY_HZ,
@@ -14,12 +14,12 @@ import {
   buildFrames,
   buildStream,
   expectedFrameLength,
-} from './helpers/mp3Builder.js';
+} from "./helpers/mp3Builder.js";
 
 const ALL_BITRATES = [...BITRATE_INDEX_BY_KBPS.keys()];
 const ALL_SAMPLE_RATES = [...SAMPLE_RATE_INDEX_BY_HZ.keys()];
 
-describe('frame length calculation', () => {
+describe("frame length calculation", () => {
   // Reference values computed by hand from floor(144 * bitrate / sampleRate) + padding.
   const cases: ReadonlyArray<[number, number, boolean, number]> = [
     [128, 44_100, false, 417],
@@ -37,13 +37,15 @@ describe('frame length calculation', () => {
   ];
 
   it.each(cases)(
-    '%i kbit/s at %i Hz (padding=%s) is %i bytes',
+    "%i kbit/s at %i Hz (padding=%s) is %i bytes",
     (bitrate, sampleRate, padding, expected) => {
-      expect(calculateFrameLengthBytes(bitrate, sampleRate, padding)).toBe(expected);
+      expect(calculateFrameLengthBytes(bitrate, sampleRate, padding)).toBe(
+        expected,
+      );
     },
   );
 
-  it('adds exactly one byte for the padding slot', () => {
+  it("adds exactly one byte for the padding slot", () => {
     for (const bitrate of ALL_BITRATES) {
       for (const sampleRate of ALL_SAMPLE_RATES) {
         const unpadded = calculateFrameLengthBytes(bitrate, sampleRate, false);
@@ -54,8 +56,8 @@ describe('frame length calculation', () => {
   });
 });
 
-describe('readFrameHeader', () => {
-  it('decodes every field of a valid MPEG-1 Layer III header', () => {
+describe("readFrameHeader", () => {
+  it("decodes every field of a valid MPEG-1 Layer III header", () => {
     const frame = buildFrame({
       bitrateKbps: 192,
       sampleRateHz: 48_000,
@@ -77,9 +79,12 @@ describe('readFrameHeader', () => {
     });
   });
 
-  it('reads a header at a non-zero offset', () => {
+  it("reads a header at a non-zero offset", () => {
     const prefix = Buffer.alloc(7, 0x00);
-    const data = Buffer.concat([prefix, buildFrameHeaderBytes({ bitrateKbps: 64 })]);
+    const data = Buffer.concat([
+      prefix,
+      buildFrameHeaderBytes({ bitrateKbps: 64 }),
+    ]);
 
     const header = readFrameHeader(data, prefix.length);
 
@@ -92,12 +97,12 @@ describe('readFrameHeader', () => {
     [ChannelMode.JointStereo],
     [ChannelMode.DualChannel],
     [ChannelMode.Mono],
-  ])('accepts channel mode %i', (channelMode) => {
+  ])("accepts channel mode %i", (channelMode) => {
     const frame = buildFrame({ channelMode });
     expect(readFrameHeader(frame, 0).channelMode).toBe(channelMode);
   });
 
-  it('reports the protection bit as CRC presence without changing frame length', () => {
+  it("reports the protection bit as CRC presence without changing frame length", () => {
     const withoutCrc = readFrameHeader(buildFrame({ crc: false }), 0);
     const withCrc = readFrameHeader(buildFrame({ crc: true }), 0);
 
@@ -107,8 +112,8 @@ describe('readFrameHeader', () => {
   });
 });
 
-describe('counting frames', () => {
-  it('counts a single valid frame', () => {
+describe("counting frames", () => {
+  it("counts a single valid frame", () => {
     const result = countMpeg1Layer3Frames(buildFrame());
 
     expect(result.frameCount).toBe(1);
@@ -116,36 +121,40 @@ describe('counting frames', () => {
     expect(result.firstFrame.frameLengthBytes).toBe(417);
   });
 
-  it('counts multiple consecutive identical frames', () => {
+  it("counts multiple consecutive identical frames", () => {
     for (const count of [2, 3, 10, 250]) {
       expect(countMpeg1Layer3Frames(buildFrames(count)).frameCount).toBe(count);
     }
   });
 
-  it.each(ALL_BITRATES)('counts frames at %i kbit/s', (bitrateKbps) => {
+  it.each(ALL_BITRATES)("counts frames at %i kbit/s", (bitrateKbps) => {
     const frames = 7;
     const data = buildFrames(frames, { bitrateKbps });
 
-    expect(data.length).toBe(frames * expectedFrameLength(bitrateKbps, 44_100, false));
+    expect(data.length).toBe(
+      frames * expectedFrameLength(bitrateKbps, 44_100, false),
+    );
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(frames);
   });
 
-  it.each(ALL_SAMPLE_RATES)('counts frames at %i Hz', (sampleRateHz) => {
+  it.each(ALL_SAMPLE_RATES)("counts frames at %i Hz", (sampleRateHz) => {
     const frames = 5;
     const data = buildFrames(frames, { sampleRateHz });
 
-    expect(data.length).toBe(frames * expectedFrameLength(128, sampleRateHz, false));
+    expect(data.length).toBe(
+      frames * expectedFrameLength(128, sampleRateHz, false),
+    );
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(frames);
   });
 
-  it('counts padded frames and advances by the padded length', () => {
+  it("counts padded frames and advances by the padded length", () => {
     const data = buildFrames(4, { padding: true });
 
     expect(data.length).toBe(4 * 418);
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(4);
   });
 
-  it('handles a mix of padded and unpadded frames', () => {
+  it("handles a mix of padded and unpadded frames", () => {
     const data = buildStream([
       { padding: true },
       { padding: false },
@@ -158,7 +167,7 @@ describe('counting frames', () => {
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(5);
   });
 
-  it('handles variable bitrate streams (bitrate may change between frames)', () => {
+  it("handles variable bitrate streams (bitrate may change between frames)", () => {
     const specs = [
       { bitrateKbps: 128 },
       { bitrateKbps: 192 },
@@ -171,7 +180,7 @@ describe('counting frames', () => {
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(specs.length);
   });
 
-  it('covers combinations of valid header fields', () => {
+  it("covers combinations of valid header fields", () => {
     const specs = [];
     for (const bitrateKbps of ALL_BITRATES) {
       for (const padding of [false, true]) {
@@ -185,7 +194,7 @@ describe('counting frames', () => {
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(specs.length);
   });
 
-  it('advances exactly one frame length, so payload bytes are never re-parsed', () => {
+  it("advances exactly one frame length, so payload bytes are never re-parsed", () => {
     // Plant a perfectly valid frame header *inside* the payload of frame 1.
     // A naive "scan for sync and increment" implementation would report 3.
     const frame = buildFrame();
@@ -196,13 +205,13 @@ describe('counting frames', () => {
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(2);
   });
 
-  it('does not count 0xFF-filled payload bytes as frames', () => {
+  it("does not count 0xFF-filled payload bytes as frames", () => {
     const data = buildFrames(3, { fillByte: 0xff });
 
     expect(countMpeg1Layer3Frames(data).frameCount).toBe(3);
   });
 
-  it('reports the audio region boundaries it used', () => {
+  it("reports the audio region boundaries it used", () => {
     const data = buildFrames(6);
     const result = countMpeg1Layer3Frames(data);
 

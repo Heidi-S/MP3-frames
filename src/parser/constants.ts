@@ -122,9 +122,12 @@ export const RESERVED_BITRATE_INDEX = 15;
  * MPEG-1 sampling rates in Hz, indexed by the 2-bit sampling rate index.
  * Index 3 is reserved and represented as `null`.
  */
-export const MPEG1_SAMPLE_RATES_HZ = [44_100, 48_000, 32_000, null] as const satisfies ReadonlyArray<
-  number | null
->;
+export const MPEG1_SAMPLE_RATES_HZ = [
+  44_100,
+  48_000,
+  32_000,
+  null,
+] as const satisfies ReadonlyArray<number | null>;
 
 /** Sampling rate index reserved by the specification. */
 export const RESERVED_SAMPLE_RATE_INDEX = 3;
@@ -176,7 +179,9 @@ const CHANNEL_MODE_BY_BITS = [
 /**
  * Resolve a table entry that uses `null` for reserved/unsupported indices.
  */
-function definedTableValue(value: number | null | undefined): number | undefined {
+function definedTableValue(
+  value: number | null | undefined,
+): number | undefined {
   return value === null || value === undefined ? undefined : value;
 }
 

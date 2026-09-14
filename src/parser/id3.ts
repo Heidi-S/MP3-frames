@@ -14,11 +14,11 @@
  *   tail: ID3v1 (128 B), ID3v1 extended "TAG+" (227 B), APEv2 (footer-described)
  */
 
-import { Mp3ParseError } from './errors.js';
+import { Mp3ParseError } from "./errors.js";
 
 /* --- ID3v2 (leading) ------------------------------------------------------ */
 
-const ID3V2_IDENTIFIER = 'ID3';
+const ID3V2_IDENTIFIER = "ID3";
 const ID3V2_HEADER_BYTES = 10;
 const ID3V2_FOOTER_BYTES = 10;
 const ID3V2_FLAG_FOOTER_PRESENT = 0b0001_0000;
@@ -30,14 +30,14 @@ const SYNCSAFE_BYTE_MASK = 0b0111_1111;
 
 /* --- ID3v1 / ID3v1 extended (trailing) ------------------------------------ */
 
-const ID3V1_IDENTIFIER = 'TAG';
+const ID3V1_IDENTIFIER = "TAG";
 const ID3V1_BYTES = 128;
-const ID3V1_EXTENDED_IDENTIFIER = 'TAG+';
+const ID3V1_EXTENDED_IDENTIFIER = "TAG+";
 const ID3V1_EXTENDED_BYTES = 227;
 
 /* --- APEv2 (trailing) ----------------------------------------------------- */
 
-const APE_FOOTER_IDENTIFIER = 'APETAGEX';
+const APE_FOOTER_IDENTIFIER = "APETAGEX";
 const APE_FOOTER_BYTES = 32;
 const APE_TAG_SIZE_OFFSET = 12; // uint32 LE: tag size excluding the header
 const APE_FLAGS_OFFSET = 20;
@@ -55,7 +55,9 @@ export function readId3v2TagLength(data: Buffer): number {
   if (data.length < ID3V2_HEADER_BYTES) {
     return 0;
   }
-  if (data.toString('latin1', 0, ID3V2_IDENTIFIER.length) !== ID3V2_IDENTIFIER) {
+  if (
+    data.toString("latin1", 0, ID3V2_IDENTIFIER.length) !== ID3V2_IDENTIFIER
+  ) {
     return 0;
   }
 
@@ -65,8 +67,8 @@ export function readId3v2TagLength(data: Buffer): number {
     const byte = data.readUInt8(ID3V2_SIZE_OFFSET + i);
     if ((byte & ~SYNCSAFE_BYTE_MASK) !== 0) {
       throw new Mp3ParseError(
-        'MALFORMED_ID3V2',
-        'ID3v2 tag declares a malformed (non-syncsafe) size.',
+        "MALFORMED_ID3V2",
+        "ID3v2 tag declares a malformed (non-syncsafe) size.",
         { offset: ID3V2_SIZE_OFFSET + i },
       );
     }
@@ -74,12 +76,13 @@ export function readId3v2TagLength(data: Buffer): number {
   }
 
   const hasFooter = (flags & ID3V2_FLAG_FOOTER_PRESENT) !== 0;
-  const total = ID3V2_HEADER_BYTES + size + (hasFooter ? ID3V2_FOOTER_BYTES : 0);
+  const total =
+    ID3V2_HEADER_BYTES + size + (hasFooter ? ID3V2_FOOTER_BYTES : 0);
 
   if (total > data.length) {
     throw new Mp3ParseError(
-      'MALFORMED_ID3V2',
-      'ID3v2 tag declares a size larger than the file itself.',
+      "MALFORMED_ID3V2",
+      "ID3v2 tag declares a size larger than the file itself.",
       { offset: 0 },
     );
   }
@@ -102,9 +105,13 @@ export function findAudioEndOffset(data: Buffer, audioStart: number): number {
     if (end - audioStart >= ID3V1_BYTES) {
       const start = end - ID3V1_BYTES;
       if (
-        data.toString('latin1', start, start + ID3V1_IDENTIFIER.length) === ID3V1_IDENTIFIER &&
-        data.toString('latin1', start, start + ID3V1_EXTENDED_IDENTIFIER.length) !==
-          ID3V1_EXTENDED_IDENTIFIER
+        data.toString("latin1", start, start + ID3V1_IDENTIFIER.length) ===
+          ID3V1_IDENTIFIER &&
+        data.toString(
+          "latin1",
+          start,
+          start + ID3V1_EXTENDED_IDENTIFIER.length,
+        ) !== ID3V1_EXTENDED_IDENTIFIER
       ) {
         end = start;
         stripping = true;
@@ -116,8 +123,11 @@ export function findAudioEndOffset(data: Buffer, audioStart: number): number {
     if (end - audioStart >= ID3V1_EXTENDED_BYTES) {
       const start = end - ID3V1_EXTENDED_BYTES;
       if (
-        data.toString('latin1', start, start + ID3V1_EXTENDED_IDENTIFIER.length) ===
-        ID3V1_EXTENDED_IDENTIFIER
+        data.toString(
+          "latin1",
+          start,
+          start + ID3V1_EXTENDED_IDENTIFIER.length,
+        ) === ID3V1_EXTENDED_IDENTIFIER
       ) {
         end = start;
         stripping = true;
@@ -129,12 +139,16 @@ export function findAudioEndOffset(data: Buffer, audioStart: number): number {
     if (end - audioStart >= APE_FOOTER_BYTES) {
       const footerStart = end - APE_FOOTER_BYTES;
       if (
-        data.toString('latin1', footerStart, footerStart + APE_FOOTER_IDENTIFIER.length) ===
-        APE_FOOTER_IDENTIFIER
+        data.toString(
+          "latin1",
+          footerStart,
+          footerStart + APE_FOOTER_IDENTIFIER.length,
+        ) === APE_FOOTER_IDENTIFIER
       ) {
         const tagSize = data.readUInt32LE(footerStart + APE_TAG_SIZE_OFFSET);
         const flags = data.readUInt32LE(footerStart + APE_FLAGS_OFFSET);
-        const headerBytes = (flags & APE_FLAG_HAS_HEADER) !== 0 ? APE_HEADER_BYTES : 0;
+        const headerBytes =
+          (flags & APE_FLAG_HAS_HEADER) !== 0 ? APE_HEADER_BYTES : 0;
         const total = tagSize + headerBytes;
         if (total > 0 && end - total >= audioStart) {
           end -= total;

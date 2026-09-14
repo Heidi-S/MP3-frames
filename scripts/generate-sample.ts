@@ -12,9 +12,9 @@
  * Run with: npm run generate:sample
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const FRAME_COUNT = 500;
 const BITRATE_KBPS = 128;
@@ -24,12 +24,15 @@ const SAMPLE_RATE_INDEX = 0; // 44100 Hz
 const CHANNEL_MODE_JOINT_STEREO = 0b01;
 
 function buildFrame(padding: boolean): Buffer {
-  const length = Math.floor((144 * BITRATE_KBPS * 1000) / SAMPLE_RATE_HZ) + (padding ? 1 : 0);
+  const length =
+    Math.floor((144 * BITRATE_KBPS * 1000) / SAMPLE_RATE_HZ) +
+    (padding ? 1 : 0);
   const frame = Buffer.alloc(length, 0x00);
   frame[0] = 0xff;
   // MPEG-1 (0b11), Layer III (0b01), protection bit set => no CRC
   frame[1] = 0b1111_1011;
-  frame[2] = (BITRATE_INDEX << 4) | (SAMPLE_RATE_INDEX << 2) | ((padding ? 1 : 0) << 1);
+  frame[2] =
+    (BITRATE_INDEX << 4) | (SAMPLE_RATE_INDEX << 2) | ((padding ? 1 : 0) << 1);
   frame[3] = CHANNEL_MODE_JOINT_STEREO << 6;
   return frame;
 }
@@ -58,14 +61,17 @@ function buildAudioStream(): Buffer {
 
 function buildId3v2Tag(): Buffer {
   // A single TIT2 (title) frame inside an ID3v2.3 tag.
-  const text = Buffer.concat([Buffer.from([0x00]), Buffer.from('MP3 Frame Analysis Sample', 'latin1')]);
+  const text = Buffer.concat([
+    Buffer.from([0x00]),
+    Buffer.from("MP3 Frame Analysis Sample", "latin1"),
+  ]);
   const frameHeader = Buffer.alloc(10);
-  frameHeader.write('TIT2', 0, 'latin1');
+  frameHeader.write("TIT2", 0, "latin1");
   frameHeader.writeUInt32BE(text.length, 4);
   const body = Buffer.concat([frameHeader, text, Buffer.alloc(64, 0x00)]);
 
   const header = Buffer.alloc(10);
-  header.write('ID3', 0, 'latin1');
+  header.write("ID3", 0, "latin1");
   header[3] = 3; // v2.3
   header[4] = 0;
   header[5] = 0;
@@ -80,16 +86,20 @@ function buildId3v2Tag(): Buffer {
 
 function buildId3v1Tag(): Buffer {
   const tag = Buffer.alloc(128, 0x00);
-  tag.write('TAG', 0, 'latin1');
-  tag.write('MP3 Frame Analysis Sample', 3, 'latin1');
-  tag.write('Generated', 33, 'latin1');
+  tag.write("TAG", 0, "latin1");
+  tag.write("MP3 Frame Analysis Sample", 3, "latin1");
+  tag.write("Generated", 33, "latin1");
   return tag;
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outputPath = join(here, '..', 'samples', 'generated-sample.mp3');
+const outputPath = join(here, "..", "samples", "generated-sample.mp3");
 
-const file = Buffer.concat([buildId3v2Tag(), buildAudioStream(), buildId3v1Tag()]);
+const file = Buffer.concat([
+  buildId3v2Tag(),
+  buildAudioStream(),
+  buildId3v1Tag(),
+]);
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, file);
 

@@ -5,11 +5,11 @@
  * hands us a `Buffer`. It performs no MP3 inspection of any kind.
  */
 
-import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import multer from 'multer';
+import type { NextFunction, Request, RequestHandler, Response } from "express";
+import multer from "multer";
 
-import { MAX_UPLOAD_BYTES, UPLOAD_FIELD_NAME } from './config.js';
-import { HTTP_STATUS, HttpError } from './errors.js';
+import { MAX_UPLOAD_BYTES, UPLOAD_FIELD_NAME } from "./config.js";
+import { HTTP_STATUS, HttpError } from "./errors.js";
 
 const MAX_NON_FILE_FIELDS = 8;
 
@@ -34,37 +34,37 @@ function toHttpError(error: unknown): HttpError {
 
   if (error instanceof multer.MulterError) {
     switch (error.code) {
-      case 'LIMIT_FILE_SIZE':
+      case "LIMIT_FILE_SIZE":
         return new HttpError(
           HTTP_STATUS.payloadTooLarge,
-          'FILE_TOO_LARGE',
+          "FILE_TOO_LARGE",
           `Uploaded file exceeds the maximum size of ${MAX_UPLOAD_BYTES} bytes.`,
         );
-      case 'LIMIT_UNEXPECTED_FILE':
+      case "LIMIT_UNEXPECTED_FILE":
         return new HttpError(
           HTTP_STATUS.badRequest,
-          'UNEXPECTED_FIELD',
-          `Unexpected file field "${error.field ?? ''}". The file must be sent in the "${UPLOAD_FIELD_NAME}" field.`,
+          "UNEXPECTED_FIELD",
+          `Unexpected file field "${error.field ?? ""}". The file must be sent in the "${UPLOAD_FIELD_NAME}" field.`,
         );
-      case 'LIMIT_FILE_COUNT':
+      case "LIMIT_FILE_COUNT":
         return new HttpError(
           HTTP_STATUS.badRequest,
-          'TOO_MANY_FILES',
-          'Exactly one file must be uploaded.',
+          "TOO_MANY_FILES",
+          "Exactly one file must be uploaded.",
         );
       default:
         return new HttpError(
           HTTP_STATUS.badRequest,
-          'INVALID_MULTIPART_REQUEST',
-          'The multipart/form-data request could not be processed.',
+          "INVALID_MULTIPART_REQUEST",
+          "The multipart/form-data request could not be processed.",
         );
     }
   }
 
   return new HttpError(
     HTTP_STATUS.badRequest,
-    'INVALID_MULTIPART_REQUEST',
-    'The request body must be a valid multipart/form-data upload.',
+    "INVALID_MULTIPART_REQUEST",
+    "The request body must be a valid multipart/form-data upload.",
   );
 }
 
@@ -72,7 +72,11 @@ function toHttpError(error: unknown): HttpError {
  * Accepts a single file in the `file` field and guarantees that `req.file`
  * exists and is non-empty by the time the route handler runs.
  */
-export const uploadSingleMp3: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+export const uploadSingleMp3: RequestHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   singleFile(req, res, (error: unknown) => {
     if (error !== undefined && error !== null) {
       next(toHttpError(error));
@@ -83,7 +87,7 @@ export const uploadSingleMp3: RequestHandler = (req: Request, res: Response, nex
       next(
         new HttpError(
           HTTP_STATUS.badRequest,
-          'MISSING_FILE',
+          "MISSING_FILE",
           `No file was uploaded. Send the MP3 as multipart/form-data in the "${UPLOAD_FIELD_NAME}" field.`,
         ),
       );
@@ -91,7 +95,13 @@ export const uploadSingleMp3: RequestHandler = (req: Request, res: Response, nex
     }
 
     if (req.file.buffer.length === 0) {
-      next(new HttpError(HTTP_STATUS.badRequest, 'EMPTY_FILE', 'The uploaded file is empty.'));
+      next(
+        new HttpError(
+          HTTP_STATUS.badRequest,
+          "EMPTY_FILE",
+          "The uploaded file is empty.",
+        ),
+      );
       return;
     }
 

@@ -41,8 +41,8 @@ import {
   mpeg1Layer3BitrateKbps,
   mpeg1SampleRateHz,
   type ChannelMode,
-} from './constants.js';
-import { Mp3ParseError } from './errors.js';
+} from "./constants.js";
+import { Mp3ParseError } from "./errors.js";
 
 /** A fully validated MPEG-1 Layer III frame header. */
 export interface Mpeg1Layer3FrameHeader {
@@ -83,7 +83,8 @@ export function calculateFrameLengthBytes(
   hasPadding: boolean,
 ): number {
   const base = Math.floor(
-    (MPEG1_LAYER3_FRAME_LENGTH_COEFFICIENT * bitrateKbps * BITS_PER_KILOBIT) / sampleRateHz,
+    (MPEG1_LAYER3_FRAME_LENGTH_COEFFICIENT * bitrateKbps * BITS_PER_KILOBIT) /
+      sampleRateHz,
   );
   return base + (hasPadding ? MPEG1_LAYER3_SLOT_BYTES : 0);
 }
@@ -95,10 +96,13 @@ export function calculateFrameLengthBytes(
  * field. The caller must guarantee that at least `FRAME_HEADER_BYTES` bytes are
  * available; `readFrameHeader` checks this too and reports `TRUNCATED_FRAME`.
  */
-export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameHeader {
+export function readFrameHeader(
+  data: Buffer,
+  offset: number,
+): Mpeg1Layer3FrameHeader {
   if (offset < 0 || offset + FRAME_HEADER_BYTES > data.length) {
     throw new Mp3ParseError(
-      'TRUNCATED_FRAME',
+      "TRUNCATED_FRAME",
       `Incomplete MPEG frame header at byte offset ${offset}: fewer than ${FRAME_HEADER_BYTES} bytes remain.`,
       { offset },
     );
@@ -110,9 +114,12 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
   const byte3 = data.readUInt8(offset + 3);
 
   // 1. Frame sync: 11 bits, all set.
-  if (byte0 !== SYNC_BYTE_0 || (byte1 & SYNC_BYTE_1_MASK) !== SYNC_BYTE_1_VALUE) {
+  if (
+    byte0 !== SYNC_BYTE_0 ||
+    (byte1 & SYNC_BYTE_1_MASK) !== SYNC_BYTE_1_VALUE
+  ) {
     throw new Mp3ParseError(
-      'INVALID_SYNC',
+      "INVALID_SYNC",
       `Expected an MPEG frame sync word at byte offset ${offset}.`,
       { offset },
     );
@@ -122,14 +129,14 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
   const versionId = (byte1 & VERSION_MASK) >> VERSION_SHIFT;
   if (versionId === MpegVersionId.Reserved) {
     throw new Mp3ParseError(
-      'RESERVED_MPEG_VERSION',
+      "RESERVED_MPEG_VERSION",
       `Reserved MPEG version id at byte offset ${offset}.`,
       { offset },
     );
   }
   if (versionId !== SUPPORTED_VERSION_ID) {
     throw new Mp3ParseError(
-      'UNSUPPORTED_MPEG_VERSION',
+      "UNSUPPORTED_MPEG_VERSION",
       `${unsupportedMpegVersionLabel(versionId)} frame at byte offset ${offset}: only MPEG Version 1 is supported.`,
       { offset },
     );
@@ -139,14 +146,14 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
   const layerId = (byte1 & LAYER_MASK) >> LAYER_SHIFT;
   if (layerId === MpegLayerId.Reserved) {
     throw new Mp3ParseError(
-      'RESERVED_LAYER',
+      "RESERVED_LAYER",
       `Reserved MPEG layer value at byte offset ${offset}.`,
       { offset },
     );
   }
   if (layerId !== SUPPORTED_LAYER_ID) {
     throw new Mp3ParseError(
-      'UNSUPPORTED_LAYER',
+      "UNSUPPORTED_LAYER",
       `MPEG ${unsupportedLayerLabel(layerId)} frame at byte offset ${offset}: only Layer III is supported.`,
       { offset },
     );
@@ -158,14 +165,14 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
   const bitrateIndex = (byte2 & BITRATE_INDEX_MASK) >> BITRATE_INDEX_SHIFT;
   if (bitrateIndex === FREE_FORMAT_BITRATE_INDEX) {
     throw new Mp3ParseError(
-      'FREE_FORMAT_BITRATE',
+      "FREE_FORMAT_BITRATE",
       `Free-format bitrate at byte offset ${offset}: frame length cannot be derived from the header.`,
       { offset },
     );
   }
   if (bitrateIndex === RESERVED_BITRATE_INDEX) {
     throw new Mp3ParseError(
-      'RESERVED_BITRATE',
+      "RESERVED_BITRATE",
       `Reserved bitrate index at byte offset ${offset}.`,
       { offset },
     );
@@ -173,17 +180,18 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
   const bitrateKbps = mpeg1Layer3BitrateKbps(bitrateIndex);
   if (bitrateKbps === undefined) {
     throw new Mp3ParseError(
-      'RESERVED_BITRATE',
+      "RESERVED_BITRATE",
       `Invalid bitrate index ${bitrateIndex} at byte offset ${offset}.`,
       { offset },
     );
   }
 
   // 5. Sampling rate index.
-  const sampleRateIndex = (byte2 & SAMPLE_RATE_INDEX_MASK) >> SAMPLE_RATE_INDEX_SHIFT;
+  const sampleRateIndex =
+    (byte2 & SAMPLE_RATE_INDEX_MASK) >> SAMPLE_RATE_INDEX_SHIFT;
   if (sampleRateIndex === RESERVED_SAMPLE_RATE_INDEX) {
     throw new Mp3ParseError(
-      'RESERVED_SAMPLE_RATE',
+      "RESERVED_SAMPLE_RATE",
       `Reserved sampling rate index at byte offset ${offset}.`,
       { offset },
     );
@@ -191,39 +199,47 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
   const sampleRateHz = mpeg1SampleRateHz(sampleRateIndex);
   if (sampleRateHz === undefined) {
     throw new Mp3ParseError(
-      'RESERVED_SAMPLE_RATE',
+      "RESERVED_SAMPLE_RATE",
       `Invalid sampling rate index ${sampleRateIndex} at byte offset ${offset}.`,
       { offset },
     );
   }
 
   // 6. Padding bit.
-  const hasPadding = ((byte2 & PADDING_MASK) >> PADDING_SHIFT) === 1;
+  const hasPadding = (byte2 & PADDING_MASK) >> PADDING_SHIFT === 1;
 
   // 7. Emphasis: 0b10 is reserved, i.e. a malformed header.
   const emphasis = byte3 & EMPHASIS_MASK;
   if (emphasis === RESERVED_EMPHASIS) {
     throw new Mp3ParseError(
-      'RESERVED_EMPHASIS',
+      "RESERVED_EMPHASIS",
       `Reserved emphasis value at byte offset ${offset}.`,
       { offset },
     );
   }
 
-  const channelMode = channelModeFromBits((byte3 & CHANNEL_MODE_MASK) >> CHANNEL_MODE_SHIFT);
+  const channelMode = channelModeFromBits(
+    (byte3 & CHANNEL_MODE_MASK) >> CHANNEL_MODE_SHIFT,
+  );
   if (channelMode === undefined) {
-    throw new Error(`Unreachable: channel mode bits out of range at byte offset ${offset}.`);
+    throw new Error(
+      `Unreachable: channel mode bits out of range at byte offset ${offset}.`,
+    );
   }
 
   // 8. Frame length.
-  const frameLengthBytes = calculateFrameLengthBytes(bitrateKbps, sampleRateHz, hasPadding);
+  const frameLengthBytes = calculateFrameLengthBytes(
+    bitrateKbps,
+    sampleRateHz,
+    hasPadding,
+  );
 
   // A frame must at least contain its own header. With the tables above the
   // smallest possible frame is 96 bytes (32 kbit/s at 48 kHz), so this is a
   // defensive invariant rather than a reachable branch.
   if (frameLengthBytes <= FRAME_HEADER_BYTES) {
     throw new Mp3ParseError(
-      'TRUNCATED_FRAME',
+      "TRUNCATED_FRAME",
       `Calculated frame length ${frameLengthBytes} at byte offset ${offset} is not a usable frame.`,
       { offset },
     );
@@ -242,20 +258,20 @@ export function readFrameHeader(data: Buffer, offset: number): Mpeg1Layer3FrameH
 
 function unsupportedMpegVersionLabel(versionId: number): string {
   if (versionId === MpegVersionId.Mpeg2) {
-    return 'MPEG Version 2';
+    return "MPEG Version 2";
   }
   if (versionId === MpegVersionId.Mpeg2_5) {
-    return 'MPEG Version 2.5';
+    return "MPEG Version 2.5";
   }
   return `MPEG version id ${versionId}`;
 }
 
 function unsupportedLayerLabel(layerId: number): string {
   if (layerId === MpegLayerId.Layer1) {
-    return 'Layer I';
+    return "Layer I";
   }
   if (layerId === MpegLayerId.Layer2) {
-    return 'Layer II';
+    return "Layer II";
   }
   return `layer id ${layerId}`;
 }

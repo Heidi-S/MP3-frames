@@ -14,6 +14,6 @@ const BYTES_PER_MEGABYTE = 1024 * 1024;
 export const MAX_UPLOAD_BYTES = 20 * BYTES_PER_MEGABYTE;
 
 /** The multipart field name the endpoint expects. Fixed by the API contract. */
-export const UPLOAD_FIELD_NAME = 'file';
+export const UPLOAD_FIELD_NAME = "file";
 
 export const DEFAULT_PORT = 3000;

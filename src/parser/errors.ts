@@ -8,24 +8,24 @@
 
 export type Mp3ParseErrorCode =
   /* Input-level problems */
-  | 'EMPTY_FILE'
-  | 'FILE_TOO_SMALL'
-  | 'MALFORMED_ID3V2'
-  | 'NO_AUDIO_DATA'
+  | "EMPTY_FILE"
+  | "FILE_TOO_SMALL"
+  | "MALFORMED_ID3V2"
+  | "NO_AUDIO_DATA"
   /* Header-level problems */
-  | 'INVALID_SYNC'
-  | 'RESERVED_MPEG_VERSION'
-  | 'UNSUPPORTED_MPEG_VERSION'
-  | 'RESERVED_LAYER'
-  | 'UNSUPPORTED_LAYER'
-  | 'FREE_FORMAT_BITRATE'
-  | 'RESERVED_BITRATE'
-  | 'RESERVED_SAMPLE_RATE'
-  | 'RESERVED_EMPHASIS'
+  | "INVALID_SYNC"
+  | "RESERVED_MPEG_VERSION"
+  | "UNSUPPORTED_MPEG_VERSION"
+  | "RESERVED_LAYER"
+  | "UNSUPPORTED_LAYER"
+  | "FREE_FORMAT_BITRATE"
+  | "RESERVED_BITRATE"
+  | "RESERVED_SAMPLE_RATE"
+  | "RESERVED_EMPHASIS"
   /* Stream-level problems */
-  | 'TRUNCATED_FRAME'
-  | 'INCONSISTENT_STREAM'
-  | 'NO_AUDIO_FRAMES';
+  | "TRUNCATED_FRAME"
+  | "INCONSISTENT_STREAM"
+  | "NO_AUDIO_FRAMES";
 
 export interface Mp3ParseErrorDetails {
   /** Byte offset in the uploaded file where the problem was detected. */
@@ -39,9 +39,13 @@ export class Mp3ParseError extends Error {
   public readonly offset: number | undefined;
   public readonly framesParsed: number | undefined;
 
-  public constructor(code: Mp3ParseErrorCode, message: string, details: Mp3ParseErrorDetails = {}) {
+  public constructor(
+    code: Mp3ParseErrorCode,
+    message: string,
+    details: Mp3ParseErrorDetails = {},
+  ) {
     super(message);
-    this.name = 'Mp3ParseError';
+    this.name = "Mp3ParseError";
     this.code = code;
     this.offset = details.offset;
     this.framesParsed = details.framesParsed;

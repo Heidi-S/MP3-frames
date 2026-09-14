@@ -9,17 +9,17 @@
  * explanation. Stack traces and internal details are never serialised.
  */
 
-import type { Mp3ParseErrorCode } from '../parser/index.js';
+import type { Mp3ParseErrorCode } from "../parser/index.js";
 
 export type HttpErrorCode =
   | Mp3ParseErrorCode
-  | 'MISSING_FILE'
-  | 'UNEXPECTED_FIELD'
-  | 'TOO_MANY_FILES'
-  | 'FILE_TOO_LARGE'
-  | 'INVALID_MULTIPART_REQUEST'
-  | 'NOT_FOUND'
-  | 'INTERNAL_ERROR';
+  | "MISSING_FILE"
+  | "UNEXPECTED_FIELD"
+  | "TOO_MANY_FILES"
+  | "FILE_TOO_LARGE"
+  | "INVALID_MULTIPART_REQUEST"
+  | "NOT_FOUND"
+  | "INTERNAL_ERROR";
 
 export interface ErrorResponseBody {
   readonly error: {
@@ -35,7 +35,7 @@ export class HttpError extends Error {
 
   public constructor(status: number, code: HttpErrorCode, message: string) {
     super(message);
-    this.name = 'HttpError';
+    this.name = "HttpError";
     this.status = status;
     this.code = code;
     Error.captureStackTrace?.(this, HttpError);

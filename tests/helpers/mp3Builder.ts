@@ -7,7 +7,11 @@
  * application at runtime.
  */
 
-import { ChannelMode, MpegLayerId, MpegVersionId } from '../../src/parser/constants.js';
+import {
+  ChannelMode,
+  MpegLayerId,
+  MpegVersionId,
+} from "../../src/parser/constants.js";
 
 export const BITRATE_INDEX_BY_KBPS: ReadonlyMap<number, number> = new Map([
   [32, 1],
@@ -83,7 +87,9 @@ function resolveBitrateIndex(spec: FrameSpec): number {
   const kbps = spec.bitrateKbps ?? DEFAULTS.bitrateKbps;
   const index = BITRATE_INDEX_BY_KBPS.get(kbps);
   if (index === undefined) {
-    throw new Error(`Test builder: ${kbps} kbit/s is not an MPEG-1 Layer III bitrate`);
+    throw new Error(
+      `Test builder: ${kbps} kbit/s is not an MPEG-1 Layer III bitrate`,
+    );
   }
   return index;
 }
@@ -119,7 +125,10 @@ export function buildFrameHeaderBytes(spec: FrameSpec = {}): Buffer {
   header[0] = 0xff;
   header[1] = 0b1110_0000 | (versionId << 3) | (layerId << 1) | (crc ? 0 : 1);
   header[2] =
-    (bitrateIndex << 4) | (sampleRateIndex << 2) | ((padding ? 1 : 0) << 1) | (privateBit ? 1 : 0);
+    (bitrateIndex << 4) |
+    (sampleRateIndex << 2) |
+    ((padding ? 1 : 0) << 1) |
+    (privateBit ? 1 : 0);
   header[3] =
     (channelMode << 6) |
     (modeExtension << 4) |
@@ -139,7 +148,9 @@ export function expectedFrameLength(
   sampleRateHz: number,
   padding: boolean,
 ): number {
-  return Math.floor((144 * bitrateKbps * 1000) / sampleRateHz) + (padding ? 1 : 0);
+  return (
+    Math.floor((144 * bitrateKbps * 1000) / sampleRateHz) + (padding ? 1 : 0)
+  );
 }
 
 /** Build one complete frame: header plus a payload of `fillByte`s. */
@@ -149,7 +160,10 @@ export function buildFrame(spec: FrameSpec = {}): Buffer {
   const sampleRateHz = spec.sampleRateHz ?? DEFAULTS.sampleRateHz;
   const padding = spec.padding ?? DEFAULTS.padding;
   const length = expectedFrameLength(bitrateKbps, sampleRateHz, padding);
-  const body = Buffer.alloc(length - header.length, spec.fillByte ?? DEFAULTS.fillByte);
+  const body = Buffer.alloc(
+    length - header.length,
+    spec.fillByte ?? DEFAULTS.fillByte,
+  );
   return Buffer.concat([header, body]);
 }
 
@@ -190,11 +204,14 @@ export function buildId3v2Tag(options: Id3v2Options = {}): Buffer {
   const withFooter = options.withFooter ?? false;
 
   const header = Buffer.alloc(10);
-  header.write('ID3', 0, 'latin1');
+  header.write("ID3", 0, "latin1");
   header[3] = withFooter ? 4 : 3; // major version
   header[4] = 0; // revision
   header[5] = withFooter ? 0b0001_0000 : 0;
-  const size = options.malformedSize === true ? Buffer.from([0xff, 0xff, 0xff, 0xff]) : toSyncsafe(bodyBytes);
+  const size =
+    options.malformedSize === true
+      ? Buffer.from([0xff, 0xff, 0xff, 0xff])
+      : toSyncsafe(bodyBytes);
   size.copy(header, 6);
 
   const body = Buffer.alloc(bodyBytes, options.fillByte ?? 0x00);
@@ -204,23 +221,23 @@ export function buildId3v2Tag(options: Id3v2Options = {}): Buffer {
   }
 
   const footer = Buffer.alloc(10);
-  footer.write('3DI', 0, 'latin1');
+  footer.write("3DI", 0, "latin1");
   header.copy(footer, 3, 3, 10);
   return Buffer.concat([header, body, footer]);
 }
 
 /** A 128-byte ID3v1 tag. */
-export function buildId3v1Tag(title = 'test title'): Buffer {
+export function buildId3v1Tag(title = "test title"): Buffer {
   const tag = Buffer.alloc(128, 0x00);
-  tag.write('TAG', 0, 'latin1');
-  tag.write(title.slice(0, 30), 3, 'latin1');
+  tag.write("TAG", 0, "latin1");
+  tag.write(title.slice(0, 30), 3, "latin1");
   return tag;
 }
 
 /** A 227-byte ID3v1 extended tag, which precedes the ID3v1 tag. */
 export function buildId3v1ExtendedTag(): Buffer {
   const tag = Buffer.alloc(227, 0x00);
-  tag.write('TAG+', 0, 'latin1');
+  tag.write("TAG+", 0, "latin1");
   return tag;
 }
 
@@ -228,7 +245,7 @@ export function buildId3v1ExtendedTag(): Buffer {
 export function buildApev2Tag(bodyBytes = 48): Buffer {
   const makeBlock = (isHeader: boolean): Buffer => {
     const block = Buffer.alloc(32, 0x00);
-    block.write('APETAGEX', 0, 'latin1');
+    block.write("APETAGEX", 0, "latin1");
     block.writeUInt32LE(2000, 8); // version
     block.writeUInt32LE(bodyBytes + 32, 12); // size: body + footer
     block.writeUInt32LE(1, 16); // item count
@@ -236,5 +253,9 @@ export function buildApev2Tag(bodyBytes = 48): Buffer {
     block.writeUInt32LE(isHeader ? 0xa000_0000 : 0x8000_0000, 20);
     return block;
   };
-  return Buffer.concat([makeBlock(true), Buffer.alloc(bodyBytes, 0x41), makeBlock(false)]);
+  return Buffer.concat([
+    makeBlock(true),
+    Buffer.alloc(bodyBytes, 0x41),
+    makeBlock(false),
+  ]);
 }
