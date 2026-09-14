@@ -1,0 +1,40 @@
+{
+  "name": "mp3-frame-analysis-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express API that counts MPEG-1 Layer III audio frames using a hand-written binary parser.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "check-node": "node scripts/check-node.cjs",
+    "predev": "npm run check-node",
+    "dev": "tsx watch src/index.ts",
+    "prebuild": "npm run check-node",
+    "build": "tsc -p tsconfig.json",
+    "prestart": "npm run check-node",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "pretest": "npm run check-node",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate:sample": "tsx scripts/generate-sample.ts"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.2",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.0"
+  }
+}
